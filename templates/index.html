@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>TypeWriter</title>
+<link href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-javascript.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-html.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-css.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-csharp.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-cpp.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-c.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-java.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-batch.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-powershell.min.js"></script>
+<style>
+  body {
+    font-family: monospace;
+    margin: 30px;
+    background: #121212;
+    color: #eee;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  #controls {
+    width: 90%;
+    max-width: 600px;
+    margin-bottom: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  label {
+    font-size: 16px;
+    color: #ccc;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  input[type="range"] {
+    width: 100%;
+    -webkit-appearance: none;
+    height: 12px;
+    border-radius: 6px;
+    background: #444;
+    cursor: pointer;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 22px;
+    height: 22px;
+    background: #fff;
+    cursor: pointer;
+    border-radius: 50%;
+    border: 1px solid #888;
+    margin-top: -5px;
+  }
+  #color-range {
+    background: linear-gradient(
+      90deg,
+      #ff0000 0%,
+      #ffff00 16.67%,
+      #00ff00 33.33%,
+      #00ffff 50%,
+      #0000ff 66.67%,
+      #ff00ff 83.33%,
+      #ff0000 100%
+    );
+  }
+  #type-area {
+    width: 90%;
+    height: 1100px;
+    border: 2px solid #666;
+    background: #111;
+    padding: 20px;
+    padding-bottom: 200px;
+    margin-bottom: 35px;
+    font-size: 20px;
+    overflow-y: auto;
+    border-radius: 8px;
+    scroll-behavior: smooth;
+    white-space: pre-wrap;
+    line-height: 1.4;
+    box-sizing: border-box;
+  }
+  #controls > div.flex-row {
+    display: flex;
+    gap: 10px;
+  }
+  button {
+    padding: 10px 20px;
+    font-size: 16px;
+    background: #222;
+    color: #eee;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+    flex: 1;
+  }
+  button:hover:not(:disabled) {
+    background: #444;
+  }
+  button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  #speed-value {
+    width: 80px;
+    text-align: right;
+    color: #ddd;
+    font-family: monospace;
+    margin-left: 10px;
+  }
+  textarea {
+    width: 100%;
+    height: 1.5em;
+    overflow: hidden;
+    resize: none;
+    background: #222;
+    color: #eee;
+    border: 1px solid #666;
+    border-radius: 4px;
+    padding: 5px;
+    font-family: monospace;
+    font-size: 16px;
+  }
+  select {
+    background: #222;
+    color: #eee;
+    border: 1px solid #666;
+    border-radius: 4px;
+    padding: 5px;
+    font-size: 16px;
+  }
+  #highlight-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  #highlight-row label {
+    flex: 1;
+    justify-content: flex-start;
+  }
+  #color-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  #color-row label {
+    flex: none;
+    margin-right: 10px;
+  }
+  #color-row #color-range {
+    flex: 1;
+  }
+  #rgb-toggle {
+    transform: scale(0.8);
+  }
+  @keyframes blink {
+    0%, 50% { background-color: #eee; }
+    50.1%, 100% { background-color: transparent; }
+  }
+  #type-area .cursor {
+    display: inline-block;
+    width: 10px;
+    height: 1.2em;
+    vertical-align: bottom;
+    animation: blink 1s steps(1) infinite;
+    margin-left: 2px;
+    border-radius: 2px;
+  }
+</style>
+</head>
+<body>
+<div id="controls">
+  <div>
+    <label for="text-input">Введите текст:
+      <textarea id="text-input" placeholder="Введите текст здесь"></textarea>
+    </label>
+  </div>
+  <div>
+    <label for="speed-range">
+      Скорость (символов в секунду):
+      <span id="speed-value">30</span>
+    </label>
+    <input type="range"
+       id="speed-range"
+       min="1"
+       max="10000"
+       step="1"
+       value="30" />
+  </div>
+  <div id="color-row">
+    <label for="rgb-toggle">RGB <input type="checkbox" id="rgb-toggle" /></label>
+    <input type="range" id="color-range" min="0" max="360" step="1" value="0" disabled />
+  </div>
+  <div id="highlight-row">
+    <label for="highlight-toggle">
+      Включить подсветку синтаксиса:
+      <input type="checkbox" id="highlight-toggle" />
+    </label>
+    <select id="language-select">
+      <option value="python" selected>Python</option>
+      <option value="javascript">JavaScript</option>
+      <option value="html">HTML/CSS/JS</option>
+      <option value="css">CSS</option>
+      <option value="csharp">C#</option>
+      <option value="cpp">C++</option>
+      <option value="c">C</option>
+      <option value="java">Java</option>
+      <option value="batch">Batch</option>
+      <option value="powershell">PowerShell</option>
+    </select>
+  </div>
+  <div class="flex-row">
+    <button id="start-btn" disabled>Старт</button>
+    <button id="pause-btn" disabled>Пауза</button>
+    <button id="resume-btn" disabled>Возобновить</button>
+    <button id="reset-btn" disabled>Сброс</button>
+  </div>
+</div>
+<div id="type-area"></div>
+<script>
+  const typeArea = document.getElementById("type-area");
+  const speedRange = document.getElementById("speed-range");
+  const speedValueDisplay = document.getElementById("speed-value");
+  const colorRange = document.getElementById("color-range");
+  const rgbToggle = document.getElementById("rgb-toggle");
+  const startBtn = document.getElementById("start-btn");
+  const pauseBtn = document.getElementById("pause-btn");
+  const resumeBtn = document.getElementById("resume-btn");
+  const resetBtn = document.getElementById("reset-btn");
+  const textInput = document.getElementById("text-input");
+  const highlightToggle = document.getElementById("highlight-toggle");
+  const languageSelect = document.getElementById("language-select");
+  let textToType = "";
+  let index = 0;
+  let paused = false;
+  let typing = false;
+  let highlightEnabled = false;
+  let rgbEnabled = false;
+  let currentColor = '#FFFFFF';
+  let fixedCursorColor = null;
+  let highlightScheduled = false;
+  function hslToHex(h, s = 100, l = 50) {
+    if (h === 360) h = 0;
+    s /= 100;
+    l /= 100;
+    const c = (1 - Math.abs(2 * l - 1)) * s;
+    const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+    const m = l - c / 2;
+    let r=0,g=0,b=0;
+    if (h < 60) [r,g,b] = [c,x,0];
+    else if (h < 120) [r,g,b] = [x,c,0];
+    else if (h < 180) [r,g,b] = [0,c,x];
+    else if (h < 240) [r,g,b] = [0,x,c];
+    else if (h < 300) [r,g,b] = [x,0,c];
+    else [r,g,b] = [c,0,x];
+    r = Math.round((r+m)*255);
+    g = Math.round((g+m)*255);
+    b = Math.round((b+m)*255);
+    return "#" + [r,g,b].map(x=>x.toString(16).padStart(2,"0")).join("").toUpperCase();
+  }
+  function updateColorFromSlider() {
+    if (!rgbEnabled) {
+      currentColor = '#FFFFFF';
+    } else {
+      currentColor = hslToHex(parseInt(colorRange.value));
+    }
+    if (!highlightEnabled) typeArea.style.color = currentColor;
+    const cursor = typeArea.querySelector('.cursor');
+    if (cursor) cursor.style.backgroundColor = typing ? fixedCursorColor : currentColor;
+    renderTypedText();
+  }
+  function renderTypedText() {
+    const currentText = textToType.slice(0, index);
+    if (highlightEnabled) {
+      if (!highlightScheduled) {
+        highlightScheduled = true;
+        requestAnimationFrame(() => {
+          const lines = currentText.split('\n');
+          const allButLastLines = lines.slice(0, -1).join('\n');
+          const lastLine = lines[lines.length - 1];
+          let html = "";
+          if (allButLastLines.length > 0) {
+            html += Prism.highlight(allButLastLines, Prism.languages[languageSelect.value], languageSelect.value);
+            html += '\n';
+          }
+          html += lastLine.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+          html += '<span class="cursor"></span>';
+          typeArea.innerHTML = html;
+          const cursor = typeArea.querySelector('.cursor');
+          if (cursor) cursor.style.backgroundColor = typing ? fixedCursorColor : currentColor;
+          const lineHeightPx = 28;
+          const scrollTriggerPx = lineHeightPx * 8;
+          const maxScrollTop = typeArea.scrollHeight - typeArea.clientHeight - 200;
+          const desiredScrollTop = typeArea.scrollHeight + typeArea.clientHeight + scrollTriggerPx;
+          typeArea.scrollTop = desiredScrollTop > 0 ? desiredScrollTop : 0;
+          highlightScheduled = false;
+        });
+      }
+    } else {
+      typeArea.innerHTML = currentText.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") + '<span class="cursor"></span>';
+      typeArea.style.color = currentColor;
+      const cursor = typeArea.querySelector('.cursor');
+      if (cursor) cursor.style.backgroundColor = typing ? fixedCursorColor : currentColor;
+      const lineHeightPx = 28;
+      const scrollTriggerPx = lineHeightPx * 8;
+      const maxScrollTop = typeArea.scrollHeight - typeArea.clientHeight - 200;
+      const desiredScrollTop = typeArea.scrollHeight + typeArea.clientHeight + scrollTriggerPx;
+      typeArea.scrollTop = desiredScrollTop > 0 ? desiredScrollTop : 0;
+    }
+  }
+  textInput.addEventListener("input", () => {
+    textToType = textInput.value;
+    startBtn.disabled = textToType.length === 0;
+    reset();
+  });
+  rgbToggle.addEventListener("change", () => {
+    rgbEnabled = rgbToggle.checked;
+    colorRange.disabled = !rgbEnabled;
+    updateColorFromSlider();
+  });
+  highlightToggle.addEventListener("change", () => {
+    highlightEnabled = highlightToggle.checked;
+    updateColorFromSlider();
+    if (!typing) renderTypedText();
+  });
+  async function typeText() {
+    typing = true;
+    startBtn.disabled = true;
+    pauseBtn.disabled = false;
+    resumeBtn.disabled = true;
+    resetBtn.disabled = false;
+    while (index < textToType.length) {
+      if (paused) {
+        await new Promise(resolve => {
+          const interval = setInterval(() => {
+            if (!paused) {
+              clearInterval(interval);
+              resolve();
+            }
+          }, 50);
+        });
+      }
+      const speed = parseFloat(speedRange.value);
+      const delay = Math.max(2, 1000 / speed);
+      const charsPerTick = Math.max(1, Math.floor(speed * delay / 1000));
+      index += charsPerTick;
+      if (index > textToType.length) index = textToType.length;
+      renderTypedText();
+      await new Promise(res => setTimeout(res, delay));
+    }
+    typing = false;
+    pauseBtn.disabled = true;
+    resumeBtn.disabled = true;
+    resetBtn.disabled = false;
+  }
+  startBtn.onclick = () => {
+    if (!typing) {
+      paused = false;
+      typeArea.textContent = "";
+      index = 0;
+      fixedCursorColor = rgbEnabled ? hslToHex(parseInt(colorRange.value)) : '#FFFFFF';
+      currentColor = fixedCursorColor;
+      typeText();
+    }
+  };
+  pauseBtn.onclick = () => {
+    if (typing) {
+      paused = true;
+      pauseBtn.disabled = true;
+      resumeBtn.disabled = false;
+    }
+  };
+  resumeBtn.onclick = () => {
+    if (paused) {
+      paused = false;
+      pauseBtn.disabled = false;
+      resumeBtn.disabled = true;
+    }
+  };
+  resetBtn.onclick = () => {
+    paused = true;
+    typing = false;
+    typeArea.textContent = "";
+    index = 0;
+    pauseBtn.disabled = true;
+    resumeBtn.disabled = true;
+    resetBtn.disabled = true;
+    startBtn.disabled = !textToType.length;
+  };
+  speedRange.oninput = () => updateSpeedDisplay();
+  colorRange.oninput = () => updateColorFromSlider();
+  function updateSpeedDisplay() {
+    speedValueDisplay.textContent = speedRange.value;
+  }
+  updateSpeedDisplay();
+  updateColorFromSlider();
+  reset();
+</script>
+</body>
+</html>
