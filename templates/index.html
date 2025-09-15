@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>TypeWriter</title>
+<title>TypeWriter with Auto Highlight</title>
 <link href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.css" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-javascript.min.js"></script>
@@ -24,6 +24,23 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+  }
+  #toggle-controls-btn {
+    cursor: pointer;
+    font-size: 24px;
+    color: #ccc;
+    user-select: none;
+    margin-bottom: 10px;
+    transition: transform 1s ease;
+    border: none;
+    background: transparent;
+    outline: none;
+  }
+  #toggle-controls-btn:hover {
+    color: #eee;
+  }
+  #toggle-controls-btn.collapsed {
+    transform: rotate(-360deg);
   }
   #controls {
     width: 90%;
@@ -71,6 +88,24 @@
       #ff0000 100%
     );
   }
+  /* The key change: container for textarea matches controls width */
+  #text-input-container {
+    width: 100%; /* fill controls width */
+  }
+  textarea {
+    width: 100%;
+    height: 1.5em;
+    overflow: hidden;
+    resize: none;
+    background: #222;
+    color: #eee;
+    border: 1px solid #666;
+    border-radius: 4px;
+    padding: 5px;
+    font-family: monospace;
+    font-size: 16px;
+    box-sizing: border-box;
+  }
   #type-area {
     width: 90%;
     height: 1100px;
@@ -110,41 +145,30 @@
     cursor: not-allowed;
   }
   #speed-value {
-    width: 80px;
+    width: 50px;
     text-align: right;
     color: #ddd;
     font-family: monospace;
     margin-left: 10px;
+    flex-shrink: 0;
   }
-  textarea {
-    width: 100%;
-    height: 1.5em;
-    overflow: hidden;
-    resize: none;
-    background: #222;
-    color: #eee;
-    border: 1px solid #666;
-    border-radius: 4px;
-    padding: 5px;
-    font-family: monospace;
-    font-size: 16px;
-  }
-  select {
-    background: #222;
-    color: #eee;
-    border: 1px solid #666;
-    border-radius: 4px;
-    padding: 5px;
-    font-size: 16px;
-  }
-  #highlight-row {
+  #speed-hacker-row {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 15px;
   }
-  #highlight-row label {
+  #speed-label-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     flex: 1;
-    justify-content: flex-start;
+  }
+  #speed-label-container span:first-child {
+    flex-shrink: 0;
+  }
+  #speed-range {
+    flex: 1;
+    margin-left: 0;
   }
   #color-row {
     display: flex;
@@ -160,6 +184,15 @@
   }
   #rgb-toggle {
     transform: scale(0.8);
+  }
+  #highlight-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  #highlight-row label {
+    flex: 1;
+    justify-content: flex-start;
   }
   @keyframes blink {
     0%, 50% { background-color: #eee; }
@@ -177,24 +210,33 @@
 </style>
 </head>
 <body>
+
+<button id="toggle-controls-btn" aria-label="Toggle Controls" title="Toggle Controls">▲</button>
+
 <div id="controls">
-  <div>
-    <label for="text-input">Введите текст:
-      <textarea id="text-input" placeholder="Введите текст здесь"></textarea>
-    </label>
+  <!-- Updated: removed label text, wrapped textarea in a div with fixed width matching controls -->
+  <div id="text-input-container">
+    <textarea id="text-input" placeholder="Введите текст здесь"></textarea>
   </div>
-  <div>
-    <label for="speed-range">
-      Скорость (символов в секунду):
+
+  <div id="speed-hacker-row">
+    <label for="hackertype-toggle" style="display: flex; align-items: center; gap: 5px; font-size: 16px; color: #ccc; white-space: nowrap;">
+      HT
+      <input type="checkbox" id="hackertype-toggle" />
+    </label>
+
+    <label id="speed-label-container" for="speed-range">
+      <span>Скорость</span>
       <span id="speed-value">30</span>
+      <input type="range"
+         id="speed-range"
+         min="1"
+         max="10000"
+         step="1"
+         value="30" />
     </label>
-    <input type="range"
-       id="speed-range"
-       min="1"
-       max="10000"
-       step="1"
-       value="30" />
   </div>
+
   <div id="color-row">
     <label for="rgb-toggle">RGB <input type="checkbox" id="rgb-toggle" /></label>
     <input type="range" id="color-range" min="0" max="360" step="1" value="0" disabled />
@@ -207,7 +249,7 @@
     <select id="language-select">
       <option value="python" selected>Python</option>
       <option value="javascript">JavaScript</option>
-      <option value="html">HTML/CSS/JS</option>
+      <option value="html">HTML</option>
       <option value="css">CSS</option>
       <option value="csharp">C#</option>
       <option value="cpp">C++</option>
@@ -215,6 +257,7 @@
       <option value="java">Java</option>
       <option value="batch">Batch</option>
       <option value="powershell">PowerShell</option>
+      <option value="auto">Auto(эксп)</option>
     </select>
   </div>
   <div class="flex-row">
@@ -224,7 +267,9 @@
     <button id="reset-btn" disabled>Сброс</button>
   </div>
 </div>
+
 <div id="type-area"></div>
+
 <script>
   const typeArea = document.getElementById("type-area");
   const speedRange = document.getElementById("speed-range");
@@ -238,15 +283,24 @@
   const textInput = document.getElementById("text-input");
   const highlightToggle = document.getElementById("highlight-toggle");
   const languageSelect = document.getElementById("language-select");
+  const hackertypeToggle = document.getElementById("hackertype-toggle");
+  const toggleControlsBtn = document.getElementById("toggle-controls-btn");
+  const controlsDiv = document.getElementById("controls");
+
   let textToType = "";
   let index = 0;
   let paused = false;
   let typing = false;
   let highlightEnabled = false;
   let rgbEnabled = false;
+  let hackerMode = false;
   let currentColor = '#FFFFFF';
   let fixedCursorColor = null;
   let highlightScheduled = false;
+
+  let lastAutoHighlightTime = 0;
+  const autoHighlightDelay = 100;
+
   function hslToHex(h, s = 100, l = 50) {
     if (h === 360) h = 0;
     s /= 100;
@@ -266,6 +320,7 @@
     b = Math.round((b+m)*255);
     return "#" + [r,g,b].map(x=>x.toString(16).padStart(2,"0")).join("").toUpperCase();
   }
+
   function updateColorFromSlider() {
     if (!rgbEnabled) {
       currentColor = '#FFFFFF';
@@ -277,30 +332,48 @@
     if (cursor) cursor.style.backgroundColor = typing ? fixedCursorColor : currentColor;
     renderTypedText();
   }
+
   function renderTypedText() {
     const currentText = textToType.slice(0, index);
+
     if (highlightEnabled) {
       if (!highlightScheduled) {
         highlightScheduled = true;
         requestAnimationFrame(() => {
-          const lines = currentText.split('\n');
-          const allButLastLines = lines.slice(0, -1).join('\n');
-          const lastLine = lines[lines.length - 1];
-          let html = "";
-          if (allButLastLines.length > 0) {
-            html += Prism.highlight(allButLastLines, Prism.languages[languageSelect.value], languageSelect.value);
-            html += '\n';
+          if (languageSelect.value === "auto") {
+            const now = performance.now();
+            if (now - lastAutoHighlightTime < autoHighlightDelay) {
+              highlightScheduled = false;
+              return;
+            }
+            lastAutoHighlightTime = now;
           }
-          html += lastLine.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+          let html = "";
+          if (languageSelect.value === "auto") {
+            html = Prism.highlightAuto(currentText).value;
+          } else if (Prism.languages[languageSelect.value]) {
+            const lines = currentText.split('\n');
+            const allButLastLines = lines.slice(0, -1).join('\n');
+            const lastLine = lines[lines.length - 1];
+            if (allButLastLines.length > 0) {
+              html += Prism.highlight(allButLastLines, Prism.languages[languageSelect.value], languageSelect.value);
+              html += '\n';
+            }
+            html += lastLine.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+          } else {
+            html = currentText.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+          }
           html += '<span class="cursor"></span>';
           typeArea.innerHTML = html;
+
           const cursor = typeArea.querySelector('.cursor');
           if (cursor) cursor.style.backgroundColor = typing ? fixedCursorColor : currentColor;
+
           const lineHeightPx = 28;
           const scrollTriggerPx = lineHeightPx * 8;
-          const maxScrollTop = typeArea.scrollHeight - typeArea.clientHeight - 200;
           const desiredScrollTop = typeArea.scrollHeight + typeArea.clientHeight + scrollTriggerPx;
           typeArea.scrollTop = desiredScrollTop > 0 ? desiredScrollTop : 0;
+
           highlightScheduled = false;
         });
       }
@@ -311,32 +384,63 @@
       if (cursor) cursor.style.backgroundColor = typing ? fixedCursorColor : currentColor;
       const lineHeightPx = 28;
       const scrollTriggerPx = lineHeightPx * 8;
-      const maxScrollTop = typeArea.scrollHeight - typeArea.clientHeight - 200;
       const desiredScrollTop = typeArea.scrollHeight + typeArea.clientHeight + scrollTriggerPx;
       typeArea.scrollTop = desiredScrollTop > 0 ? desiredScrollTop : 0;
     }
   }
+
   textInput.addEventListener("input", () => {
     textToType = textInput.value;
-    startBtn.disabled = textToType.length === 0;
-    reset();
+    if (index > textToType.length) index = textToType.length;
+    startBtn.disabled = hackerMode || textToType.length === 0;
+    resetBtn.disabled = false;
+    renderTypedText();
   });
+
   rgbToggle.addEventListener("change", () => {
     rgbEnabled = rgbToggle.checked;
     colorRange.disabled = !rgbEnabled;
     updateColorFromSlider();
   });
+
   highlightToggle.addEventListener("change", () => {
     highlightEnabled = highlightToggle.checked;
     updateColorFromSlider();
     if (!typing) renderTypedText();
   });
+
+  hackertypeToggle.addEventListener("change", () => {
+    hackerMode = hackertypeToggle.checked;
+
+    if (hackerMode) {
+      paused = true;
+      typing = false;
+      startBtn.disabled = true;
+      pauseBtn.disabled = true;
+      resumeBtn.disabled = true;
+      resetBtn.disabled = false;
+      speedRange.disabled = true;
+      renderTypedText();
+    } else {
+      paused = true;
+      typing = false;
+      startBtn.disabled = textToType.length === 0;
+      pauseBtn.disabled = true;
+      resumeBtn.disabled = true;
+      resetBtn.disabled = false;
+      speedRange.disabled = false;
+      renderTypedText();
+    }
+  });
+
   async function typeText() {
+    if (hackerMode) return;
     typing = true;
     startBtn.disabled = true;
     pauseBtn.disabled = false;
     resumeBtn.disabled = true;
     resetBtn.disabled = false;
+
     while (index < textToType.length) {
       if (paused) {
         await new Promise(resolve => {
@@ -361,16 +465,35 @@
     resumeBtn.disabled = true;
     resetBtn.disabled = false;
   }
+
+  document.addEventListener("keydown", (e) => {
+    if (!hackerMode) return;
+    if (index >= textToType.length) return;
+
+    if (
+      e.key.length === 1 ||
+      e.key === "Enter" ||
+      e.key === "Backspace" ||
+      e.key === "Delete" ||
+      e.key === "ArrowRight" ||
+      e.key === "ArrowDown"
+    ) {
+      e.preventDefault();
+      index++;
+      if (index > textToType.length) index = textToType.length;
+      renderTypedText();
+    }
+  });
+
   startBtn.onclick = () => {
     if (!typing) {
       paused = false;
-      typeArea.textContent = "";
-      index = 0;
       fixedCursorColor = rgbEnabled ? hslToHex(parseInt(colorRange.value)) : '#FFFFFF';
       currentColor = fixedCursorColor;
       typeText();
     }
   };
+
   pauseBtn.onclick = () => {
     if (typing) {
       paused = true;
@@ -378,6 +501,7 @@
       resumeBtn.disabled = false;
     }
   };
+
   resumeBtn.onclick = () => {
     if (paused) {
       paused = false;
@@ -385,24 +509,39 @@
       resumeBtn.disabled = true;
     }
   };
+
   resetBtn.onclick = () => {
     paused = true;
     typing = false;
-    typeArea.textContent = "";
     index = 0;
+    typeArea.textContent = "";
     pauseBtn.disabled = true;
     resumeBtn.disabled = true;
     resetBtn.disabled = true;
-    startBtn.disabled = !textToType.length;
+    startBtn.disabled = hackerMode || !textToType.length;
   };
-  speedRange.oninput = () => updateSpeedDisplay();
-  colorRange.oninput = () => updateColorFromSlider();
-  function updateSpeedDisplay() {
+
+  speedRange.oninput = () => {
     speedValueDisplay.textContent = speedRange.value;
-  }
-  updateSpeedDisplay();
+  };
+  colorRange.oninput = () => updateColorFromSlider();
+
+  toggleControlsBtn.addEventListener("click", () => {
+    if (controlsDiv.style.display === "none") {
+      controlsDiv.style.display = "flex";
+      toggleControlsBtn.textContent = "▲";
+      toggleControlsBtn.classList.remove("collapsed");
+    } else {
+      controlsDiv.style.display = "none";
+      toggleControlsBtn.textContent = "▼";
+      toggleControlsBtn.classList.add("collapsed");
+    }
+  });
+
+  speedValueDisplay.textContent = speedRange.value;
   updateColorFromSlider();
-  reset();
+  resetBtn.disabled = true;
+  startBtn.disabled = true;
 </script>
 </body>
 </html>
